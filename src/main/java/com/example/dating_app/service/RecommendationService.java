@@ -15,7 +15,7 @@ public class RecommendationService {
     private final UserRepository userRepository;
 
     public List<User> getRecommendations(RecommendationFilterDTO filter) {
-        var spec = UserSpecification.createRecommendationSpec(filter);
+        var spec = UserSpecification.createSpecification(filter);
         return userRepository.findAll(spec);
     }
 }

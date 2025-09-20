@@ -27,7 +27,9 @@ public class User implements UserDetails {
     private Long id;
     private String firstName;
     private String lastName;
-    private LocalDate dateOfBirth;
+    private String bio;
+    private String city;
+    private Integer age;
     private String phone;
     private String email;
     private String password;
@@ -35,9 +37,6 @@ public class User implements UserDetails {
     private Gender gender;
     @Enumerated(EnumType.STRING)
     private UserRole role;
-    private String bio;
-    private String city;
-    private Integer age;
     @Enumerated(EnumType.STRING)
     private LookingFor lookingFor;
 

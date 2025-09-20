@@ -17,22 +17,22 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
 
-    @Transactional
-    public void upgradeToPremium(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new SubscriptionException("Пользователь не найден"));
-
-        Subscription sub = subscriptionRepository.findByUserId(userId).orElse(new Subscription());
-        if (sub.isActive()) {
-            throw new SubscriptionException("У вас уже активная подписка");
-        }
-
-        sub.setUser(user);
-        sub.setType("PREMIUM");
-        sub.setStartDate(LocalDateTime.now());
-        sub.setEndDate(LocalDateTime.now().plusDays(30));
-        sub.setActive(true);
-
-        subscriptionRepository.save(sub);
-    }
+//    @Transactional
+//    public void upgradeToPremium(Long userId) {
+//        User user = userRepository.findById(userId)
+//                .orElseThrow(() -> new SubscriptionException("Пользователь не найден"));
+//
+//        Subscription sub = subscriptionRepository.findByUserId(userId).orElse(new Subscription());
+//        if (sub.isActive()) {
+//            throw new SubscriptionException("У вас уже активная подписка");
+//        }
+//
+//        sub.setUser(user);
+//        sub.setType("PREMIUM");
+//        sub.setStartDate(LocalDateTime.now());
+//        sub.setEndDate(LocalDateTime.now().plusDays(30));
+//        sub.setActive(true);
+//
+//        subscriptionRepository.save(sub);
+//    }
 }

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Авторизация</h1>
+
+    <div class="tabs">
+        <div class="tab active" onclick="showForm('login')">Вход</div>
+        <div class="tab" onclick="showForm('register')">Регистрация</div>
+    </div>
+
+    <!-- Форма входа -->
+    <div id="loginForm" class="form-container active">
+        <div class="form-group">
+            <label for="loginPhone">Телефон:</label>
+            <input type="text" id="loginPhone" placeholder="Введите телефон">
+        </div>
+
+        <div class="form-group">
+            <label for="loginPassword">Пароль:</label>
+            <input type="password" id="loginPassword" placeholder="Введите пароль">
+        </div>
+
+        <button onclick="signIn()">Войти</button>
+    </div>
+
+    <!-- Форма регистрации -->
+    <div id="registerForm" class="form-container">
+        <div class="form-group">
+            <label for="firstName">Имя:</label>
+            <input type="text" id="firstName" placeholder="Введите имя">
+        </div>
+
+        <div class="form-group">
+            <label for="city">Город:</label>
+            <input type="text" id="city" placeholder="Введите город">
+        </div>
+
+        <div class="form-group">
+            <label for="age">Возраст:</label>
+            <input type="number" id="age" placeholder="Введите возраст">
+        </div>
+
+        <div class="form-group">
+            <label for="registerPhone">Телефон:</label>
+            <input type="text" id="registerPhone" placeholder="Введите телефон">
+        </div>
+
+        <div class="form-group">
+            <label for="registerPassword">Пароль:</label>
+            <input type="password" id="registerPassword" placeholder="Введите пароль">
+        </div>
+
+        <div class="form-group">
+            <label for="gender">Пол:</label>
+            <select id="gender">
+                <option value="MALE">Мужской</option>
+                <option value="FEMALE">Женский</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="role">Роль:</label>
+            <select id="role">
+                <option value="USER">Пользователь</option>
+                <option value="ADMIN">Администратор</option>
+            </select>
+        </div>
+
+        <button onclick="signUp()">Зарегистрироваться</button>
+    </div>
+
+    <div id="message" class="message" style="display: none;"></div>
+
+    <div id="tokenInfo" class="token-info" style="display: none;">
+        <h3>JWT Token:</h3>
+        <p id="tokenText"></p>
+    </div>
+</div>
+
+<script src="login.js"></script>
+
+</body>
+</html>
