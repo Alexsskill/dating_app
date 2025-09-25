@@ -2,7 +2,6 @@ package com.example.dating_app.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "likes")
@@ -22,5 +21,4 @@ public class Like {
     @ManyToOne
     @JoinColumn(name = "receiver_id")
     private User receiver;
-//    private Boolean isActive = true;
 }

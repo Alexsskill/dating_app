@@ -1,7 +1,6 @@
 package com.example.dating_app.specification;
 
 import com.example.dating_app.dto.RecommendationFilterDTO;
-import com.example.dating_app.enums.LookingFor;
 import com.example.dating_app.model.User;
 import org.springframework.data.jpa.domain.Specification;
 

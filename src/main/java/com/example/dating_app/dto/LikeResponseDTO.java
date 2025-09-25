@@ -2,8 +2,6 @@ package com.example.dating_app.dto;
 
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Getter
 @Setter
 @Builder

@@ -3,8 +3,6 @@ package com.example.dating_app.dto;
 import com.example.dating_app.enums.LookingFor;
 import lombok.*;
 
-import java.time.LocalDate;
-
 @Getter
 @Setter
 @Builder
