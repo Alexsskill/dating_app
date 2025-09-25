@@ -4,7 +4,6 @@ import com.example.dating_app.dto.SignInRequest;
 import com.example.dating_app.dto.SignUpRequest;
 import com.example.dating_app.security.JwtAuthResponse;
 import com.example.dating_app.service.AuthorizationService;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
