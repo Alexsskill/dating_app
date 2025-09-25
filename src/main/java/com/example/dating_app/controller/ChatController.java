@@ -1,10 +1,10 @@
 package com.example.dating_app.controller;
 
+import com.example.dating_app.dto.ChatMessageResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
-import com.example.dating_app.dto.ChatMessageDTO;
+import com.example.dating_app.dto.ChatMessageCreateDTO;
 import com.example.dating_app.service.ChatService;
 
 import java.util.List;
@@ -16,21 +16,15 @@ public class ChatController {
     private final ChatService chatService;
 
     @PostMapping("/send")
-    public ResponseEntity<String> sendMessage(@RequestBody ChatMessageDTO dto) {
-        chatService.sendMessage(dto.getSenderId(), dto.getReceiverId(), dto.getContent());
+    public ResponseEntity<String> sendMessage(@RequestBody ChatMessageCreateDTO dto) {
+        chatService.sendMessage(dto);
         return ResponseEntity.ok("Сообщение отправлено");
     }
 
-    @GetMapping("/history/{userId}/{otherId}")
-    public ResponseEntity<List<ChatMessageDTO>> getHistory(@PathVariable Long userId, @PathVariable Long otherId) {
-        var messages = chatService.getChatHistory(userId, otherId);
-        return ResponseEntity.ok(messages.stream()
-                .map(m -> ChatMessageDTO.builder()
-                        .senderId(m.getSender().getId())
-                        .receiverId(m.getReceiver().getId())
-                        .content(m.getContent())
-                        .sentAt(m.getSentAt())
-                        .build())
-                .toList());
+    @GetMapping("/history/{currentUserId}/{otherUserId}")
+    public ResponseEntity<List<ChatMessageResponseDTO>> getChatHistory(
+            @PathVariable Long currentUserId,
+            @PathVariable Long otherUserId) {
+        return ResponseEntity.ok(chatService.getChatHistory(currentUserId, otherUserId));
     }
 }

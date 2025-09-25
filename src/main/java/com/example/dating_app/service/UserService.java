@@ -7,6 +7,7 @@ import com.example.dating_app.exception.UserAlreadyExistException;
 import com.example.dating_app.mapper.UserMapper;
 import com.example.dating_app.specification.UserSpecification;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,6 +19,7 @@ import com.example.dating_app.repository.UserRepository;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -34,8 +36,9 @@ public class UserService {
                 .orElseThrow(() -> new UserNotFoundException(phone));
     }
 
-    public User findById(Long id) {
+    public UserResponseDTO findById(Long id) {
         return userRepository.findById(id)
+                .map(userMapper::toUserResponseDTO)
                 .orElseThrow(() -> new UserNotFoundException(id));
     }
 

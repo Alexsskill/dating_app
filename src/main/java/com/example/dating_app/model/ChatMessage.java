@@ -5,7 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "chat_messages")
+@Table(name = "chat_message")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,15 +15,23 @@ public class ChatMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "sender_id")
+    // Отправитель сообщения - связь с User
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private User sender;
 
-    @ManyToOne
-    @JoinColumn(name = "receiver_id")
+    // Получатель сообщения - связь с User
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "receiver_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private User receiver;
 
+    @Column(nullable = false, length = 1000)
     private String content;
-    private LocalDateTime sentAt;
-    private Boolean isRead = false;
+
+    @Column(nullable = false)
+    private LocalDateTime sentAt = LocalDateTime.now();
 }

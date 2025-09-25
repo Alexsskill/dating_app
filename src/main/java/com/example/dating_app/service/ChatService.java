@@ -1,5 +1,8 @@
 package com.example.dating_app.service;
 
+import com.example.dating_app.dto.ChatMessageCreateDTO;
+import com.example.dating_app.dto.ChatMessageResponseDTO;
+import com.example.dating_app.mapper.ChatMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -19,33 +22,33 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatMapper chatMapper;
 
     @Transactional
-    public void sendMessage(Long senderId, Long receiverId, String content) {
-        User sender = userRepository.findById(senderId)
-                .orElseThrow(() -> new UserNotFoundException(senderId));
-        User receiver = userRepository.findById(receiverId)
-                .orElseThrow(() -> new UserNotFoundException(receiverId));
+    public void sendMessage(ChatMessageCreateDTO chatMessageCreateDTO) {
+        User sender = userRepository.findById(chatMessageCreateDTO.getSenderId())
+                .orElseThrow(() -> new UserNotFoundException(chatMessageCreateDTO.getSenderId()));
+        User receiver = userRepository.findById(chatMessageCreateDTO.getReceiverId())
+                .orElseThrow(() -> new UserNotFoundException(chatMessageCreateDTO.getReceiverId()));
 
-        ChatMessage message = ChatMessage.builder()
-                .sender(sender)
-                .receiver(receiver)
-                .content(content)
-                .sentAt(LocalDateTime.now())
-                .isRead(false)
-                .build();
+        ChatMessage message = chatMapper.toChatMessage(chatMessageCreateDTO);
+        message.setSender(sender);
+        message.setReceiver(receiver);
+        message.setSentAt(LocalDateTime.now());
 
         chatMessageRepository.save(message);
 
         // Отправка через WebSocket
         messagingTemplate.convertAndSendToUser(
-                receiverId.toString(),
+                receiver.getId().toString(),
                 "/queue/messages",
                 message
         );
     }
 
-    public List<ChatMessage> getChatHistory(Long userId, Long otherId) {
-        return chatMessageRepository.findChatMessages(userId, otherId);
+    @Transactional(readOnly = true)
+    public List<ChatMessageResponseDTO> getChatHistory(Long currentUserId, Long otherUserId) {
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UserNotFoundException(currentUserId));
+        return chatMessageRepository.findChatHistory(currentUser.getId(), otherUserId).stream().map(chatMapper::toChatMessageResponseDTO).toList();
     }
 }

@@ -30,7 +30,7 @@ public class UserSpecification {
     }
 
     // 🔥 Новая спецификация для поля enum
-    public static Specification<User> hasLookingFor(LookingFor lookingFor) {
+    public static Specification<User> hasLookingFor(String lookingFor) {
         return (root, query, criteriaBuilder) ->
                 lookingFor == null ? null : criteriaBuilder.equal(root.get("lookingFor"), lookingFor);
     }

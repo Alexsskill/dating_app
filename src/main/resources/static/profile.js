@@ -4,6 +4,15 @@ const AUTH_URL = 'http://localhost:8080/auth';
 // Переменные для поиска
 let currentFilters = {};
 let searchResults = [];
+let currentProfileUser = null;
+let likesList = [];
+
+// Переменные для чата
+let currentChatUser = null;
+let chatMessages = [];
+let currentUserData = null;
+let stompClient = null;
+let isWebSocketConnected = false;
 
 // Проверка аутентификации при загрузке
 document.addEventListener('DOMContentLoaded', function () {
@@ -11,6 +20,8 @@ document.addEventListener('DOMContentLoaded', function () {
     loadProfile();
     setupEditForm();
     setupFilterForm();
+    connectWebSocket();
+    setupChatEventListeners();
 });
 
 function checkAuth() {
@@ -35,6 +46,7 @@ async function loadProfile() {
 
         if (response.ok) {
             const userData = await response.json();
+            currentUserData = userData;
             displayUserData(userData);
             populateEditForm(userData);
         } else if (response.status === 401) {
@@ -69,9 +81,10 @@ function populateEditForm(userData) {
 function formatGender(gender) {
     const genders = {
         'MALE': '👨 Мужской',
-        'FEMALE': '👩 Женский'
+        'FEMALE': '👩 Женский',
+        'OTHER': '⚧ Другой'
     };
-    return genders[gender] || gender;
+    return genders[gender] || gender || 'Не указан';
 }
 
 function formatRole(role) {
@@ -158,12 +171,18 @@ function setupFilterForm() {
 }
 
 function getFilters() {
+    const genderEl = document.getElementById('filterGender');
+    const cityEl = document.getElementById('filterCity');
+    const minAgeEl = document.getElementById('minAge');
+    const maxAgeEl = document.getElementById('maxAge');
+    const lookingForEl = document.getElementById('filterLookingFor'); // <-- обновлённый id
+
     return {
-        gender: document.getElementById('filterGender').value || null,
-        city: document.getElementById('filterCity').value || null,
-        minAge: document.getElementById('minAge').value ? parseInt(document.getElementById('minAge').value) : null,
-        maxAge: document.getElementById('maxAge').value ? parseInt(document.getElementById('maxAge').value) : null,
-        lookingFor: document.getElementById('lookingFor').value || null
+        gender: genderEl?.value && genderEl.value !== '' ? genderEl.value : null,
+        city: cityEl?.value && cityEl.value.trim() !== '' ? cityEl.value.trim() : null,
+        minAge: minAgeEl?.value ? parseInt(minAgeEl.value) : null,
+        maxAge: maxAgeEl?.value ? parseInt(maxAgeEl.value) : null,
+        lookingFor: lookingForEl?.value && lookingForEl.value !== '' ? lookingForEl.value : null
     };
 }
 
@@ -182,7 +201,6 @@ async function searchUsers() {
             }
         });
 
-        // Исправленный endpoint для поиска пользователей
         const response = await fetch(`${API_BASE_URL}/recommend?${queryParams}`, {
             method: 'GET',
             headers: {
@@ -191,29 +209,18 @@ async function searchUsers() {
             }
         });
 
-        console.log('Search URL:', `${API_BASE_URL}/recommend?${queryParams}`);
-        console.log('Response status:', response.status);
-
         if (response.ok) {
             searchResults = await response.json();
-            console.log('Search results:', searchResults);
             displaySearchResults(searchResults);
         } else if (response.status === 401) {
             showMessage('❌ Необходима авторизация', false);
             logout();
-        } else if (response.status === 404) {
-            showMessage('❌ Endpoint не найден. Проверьте URL', false);
-            displayDemoResults();
         } else {
             const errorText = await response.text();
-            console.error('Search error:', errorText);
             showMessage('❌ Ошибка поиска пользователей: ' + errorText, false);
-            displayDemoResults();
         }
     } catch (error) {
-        console.error('Network error:', error);
         showMessage('❌ Ошибка сети: ' + error.message, false);
-        displayDemoResults();
     } finally {
         document.getElementById('loading').style.display = 'none';
     }
@@ -228,7 +235,7 @@ function displaySearchResults(users) {
     }
 
     container.innerHTML = users.map(user => `
-        <div class="user-card">
+        <div class="user-card" onclick="viewUserProfile(${user.id})">
             <div class="user-header">
                 <div class="user-name">${user.firstName || 'Не указано'}</div>
                 <div class="user-age">${user.age || '?'} лет</div>
@@ -245,11 +252,6 @@ function displaySearchResults(users) {
                     <span class="detail-value">${formatGender(user.gender)}</span>
                 </div>
                 
-                <div class="user-detail">
-                    <span class="detail-label">Телефон</span>
-                    <span class="detail-value">${user.phone || 'Не указан'}</span>
-                </div>
-                
                 ${user.lookingFor ? `
                 <div class="user-detail">
                     <span class="detail-label">Цель знакомства</span>
@@ -259,8 +261,8 @@ function displaySearchResults(users) {
             </div>
             
             <div class="user-actions">
-                <button class="like-btn" onclick="likeUser('${user.id}')">❤️ Лайк</button>
-                <button class="message-btn" onclick="messageUser('${user.id}')">✉️ Написать</button>
+                <button class="like-btn" onclick="event.stopPropagation(); likeUser(${user.id})">❤️ Лайк</button>
+                <button class="message-btn" onclick="event.stopPropagation(); startChatWithUser(${user.id})">💬 Чат</button>
             </div>
         </div>
     `).join('');
@@ -274,21 +276,424 @@ function clearFilters() {
     currentFilters = {};
 }
 
-function likeUser(userId) {
+async function likeUser(userId) {
+    const token = localStorage.getItem('jwtToken');
     const user = searchResults.find(u => u.id == userId);
-    if (user) {
-        showMessage(`❤️ Вы лайкнули ${user.firstName}`, true);
-        // Здесь можно добавить вызов API для лайка
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/like?targetUserId=${userId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const message = await response.text();
+            showMessage(`❤️ ${message}`, true);
+
+            if (document.getElementById('likesSection').style.display === 'block') {
+                loadLikes();
+            }
+        } else {
+            showMessage('❌ Ошибка при отправке лайка', false);
+        }
+    } catch (error) {
+        showMessage('❌ Ошибка сети: ' + error.message, false);
     }
 }
 
-function messageUser(userId) {
-    const user = searchResults.find(u => u.id == userId);
-    if (user) {
-        showMessage(`✉️ Чат с ${user.firstName}`, true);
-        // Здесь можно добавить логику открытия чата
+// Функции для раздела симпатий
+function toggleLikesSection() {
+    const likesSection = document.getElementById('likesSection');
+    const isVisible = likesSection.style.display === 'block';
+
+    likesSection.style.display = isVisible ? 'none' : 'block';
+
+    if (!isVisible) {
+        loadLikes();
     }
 }
+
+async function loadLikes() {
+    const token = localStorage.getItem('jwtToken');
+    const likesContainer = document.getElementById('likesContainer');
+    const likesLoading = document.getElementById('likesLoading');
+
+    likesLoading.style.display = 'flex';
+    likesContainer.innerHTML = '';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/like`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            likesList = await response.json();
+            displayLikes(likesList);
+        } else if (response.status === 401) {
+            showMessage('❌ Необходима авторизация', false);
+            logout();
+        } else {
+            showMessage('❌ Ошибка загрузки симпатий', false);
+        }
+    } catch (error) {
+        showMessage('❌ Ошибка сети: ' + error.message, false);
+    } finally {
+        likesLoading.style.display = 'none';
+    }
+}
+
+function displayLikes(likes) {
+    const container = document.getElementById('likesContainer');
+
+    if (!likes || likes.length === 0) {
+        container.innerHTML = '<div class="no-likes">😔 У вас пока нет симпатий</div>';
+        return;
+    }
+
+    container.innerHTML = likes.map(like => `
+        <div class="like-item" onclick="viewUserFromLikes(${like.userId})">
+            <div class="like-info">
+                <div class="like-name">${like.userName || 'Неизвестный пользователь'}</div>
+                <div class="like-details">
+                    ${like.userAge ? `<span class="like-detail">${like.userAge} лет</span>` : ''}
+                    ${like.userCity ? `<span class="like-detail">📍 ${like.userCity}</span>` : ''}
+                    ${like.userGender ? `<span class="like-detail">${formatGender(like.userGender)}</span>` : ''}
+                </div>
+            </div>
+            <div class="like-actions">
+                <button class="chat-btn" onclick="event.stopPropagation(); startChatWithUserFromLikes(${like.userId})">
+                    💬 Чат
+                </button>
+                <button class="unlike-btn" onclick="event.stopPropagation(); unlike(${like.id})">
+                    ❌ Убрать лайк
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function unlike(likeId) {
+    const token = localStorage.getItem('jwtToken');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/like/${likeId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const message = await response.text();
+            showMessage(`✅ ${message}`, true);
+            loadLikes();
+        } else {
+            showMessage('❌ Ошибка при удалении лайка', false);
+        }
+    } catch (error) {
+        showMessage('❌ Ошибка сети: ' + error.message, false);
+    }
+}
+
+// Функции для просмотра профиля
+function viewUserProfile(userId) {
+    openUserProfileModal();
+    loadUserProfile(userId);
+}
+
+function viewUserFromLikes(userId) {
+    openUserProfileModal();
+    loadUserProfile(userId);
+}
+
+function openUserProfileModal() {
+    document.getElementById('userProfileModal').style.display = 'block';
+    document.getElementById('profileLoading').style.display = 'block';
+    document.getElementById('profileContent').style.display = 'none';
+}
+
+function closeUserProfile() {
+    document.getElementById('userProfileModal').style.display = 'none';
+    currentProfileUser = null;
+}
+
+async function loadUserProfile(userId) {
+    const token = localStorage.getItem('jwtToken');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/${userId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const user = await response.json();
+            currentProfileUser = user;
+            displayUserProfile(user);
+        } else {
+            showMessage('❌ Не удалось загрузить профиль', false);
+            closeUserProfile();
+        }
+    } catch (error) {
+        showMessage('❌ Ошибка загрузки профиля', false);
+        closeUserProfile();
+    }
+}
+
+function displayUserProfile(user) {
+    document.getElementById('profileName').textContent = user.firstName || 'Неизвестно';
+    document.getElementById('profileAge').textContent = user.age ? user.age + ' лет' : '';
+    document.getElementById('profileCity').textContent = user.city || 'Не указан';
+    document.getElementById('profileGender').textContent = formatGender(user.gender);
+    document.getElementById('profileLookingFor').textContent = formatLookingFor(user.lookingFor);
+    document.getElementById('profilePhone').textContent = user.phone || 'Не указан';
+
+    document.getElementById('profileLoading').style.display = 'none';
+    document.getElementById('profileContent').style.display = 'block';
+}
+
+function likeProfileUser() {
+    if (currentProfileUser) {
+        likeUser(currentProfileUser.id);
+        closeUserProfile();
+    }
+}
+
+function startChatWithProfileUser() {
+    if (currentProfileUser) {
+        startChatWithUser(currentProfileUser.id);
+        closeUserProfile();
+    }
+}
+
+// Функции для чата
+function connectWebSocket() {
+    const socket = new SockJS('http://localhost:8080/ws');
+    stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, function(frame) {
+        console.log('WebSocket connected: ' + frame);
+        isWebSocketConnected = true;
+
+        stompClient.subscribe('/user/queue/messages', function(message) {
+            const chatMessage = JSON.parse(message.body);
+            if (currentChatUser && chatMessage.senderId === currentChatUser.id) {
+                chatMessages.push(chatMessage);
+                displayChatMessages(chatMessages);
+            }
+        });
+    }, function(error) {
+        console.log('WebSocket connection error: ', error);
+        isWebSocketConnected = false;
+        setTimeout(connectWebSocket, 5000);
+    });
+}
+
+function setupChatEventListeners() {
+    const chatInput = document.getElementById('chatMessageInput');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+    }
+}
+
+async function startChatWithUser(userId) {
+    const user = searchResults.find(u => u.id == userId);
+    if (user) {
+        openChat(user);
+    } else {
+        await loadUserForChat(userId);
+    }
+}
+
+async function startChatWithUserFromLikes(userId) {
+    const likedUser = likesList.find(like => like.userId === userId);
+    if (likedUser) {
+        const user = {
+            id: likedUser.userId,
+            firstName: likedUser.userName,
+            age: likedUser.userAge,
+            city: likedUser.userCity,
+            gender: likedUser.userGender
+        };
+        openChat(user);
+    } else {
+        await loadUserForChat(userId);
+    }
+}
+
+async function loadUserForChat(userId) {
+    const token = localStorage.getItem('jwtToken');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/${userId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const user = await response.json();
+            openChat(user);
+        } else {
+            showMessage('❌ Не удалось начать чат', false);
+        }
+    } catch (error) {
+        showMessage('❌ Ошибка загрузки пользователя', false);
+    }
+}
+
+function openChat(user) {
+    currentChatUser = user;
+    document.getElementById('chatUserName').textContent = user.firstName || 'Пользователь';
+    document.getElementById('chatModal').style.display = 'block';
+
+    loadChatHistory(user.id);
+
+    setTimeout(() => {
+        document.getElementById('chatMessageInput').focus();
+    }, 100);
+}
+
+function closeChatModal() {
+    document.getElementById('chatModal').style.display = 'none';
+    currentChatUser = null;
+    chatMessages = [];
+    document.getElementById('chatMessageInput').value = '';
+}
+
+async function loadChatHistory(otherUserId) {
+    if (!currentUserData || !otherUserId) return;
+
+    const token = localStorage.getItem('jwtToken');
+    const messagesContainer = document.getElementById('chatMessages');
+
+    messagesContainer.innerHTML = '<div class="no-messages">Загрузка сообщений...</div>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/chat/history/${currentUserData.id}/${otherUserId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const messages = await response.json();
+            chatMessages = messages;
+            displayChatMessages(messages);
+        } else {
+            messagesContainer.innerHTML = '<div class="no-messages">Не удалось загрузить историю сообщений</div>';
+        }
+    } catch (error) {
+        messagesContainer.innerHTML = '<div class="no-messages">Ошибка загрузки сообщений</div>';
+    }
+}
+
+function displayChatMessages(messages) {
+    const container = document.getElementById('chatMessages');
+
+    if (!messages || messages.length === 0) {
+        container.innerHTML = '<div class="no-messages">Начните общение первым!</div>';
+        return;
+    }
+
+    container.innerHTML = messages.map(message => {
+        const isSent = message.senderId === currentUserData.id;
+        return `
+            <div class="chat-message ${isSent ? 'message-sent' : 'message-received'}">
+                <div class="message-text">${message.content}</div>
+                <span class="message-time">${formatMessageTime(message.sentAt)}</span>
+            </div>
+        `;
+    }).join('');
+
+    container.scrollTop = container.scrollHeight;
+}
+
+function formatMessageTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+async function sendChatMessage() {
+    if (!currentChatUser || !currentUserData) return;
+
+    const input = document.getElementById('chatMessageInput');
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    const token = localStorage.getItem('jwtToken');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/chat/send`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                senderId: currentUserData.id,
+                receiverId: currentChatUser.id,
+                content: message
+            })
+        });
+
+        if (response.ok) {
+            const result = await response.text();
+            console.log('Message sent:', result);
+
+            const newMessage = {
+                senderId: currentUserData.id,
+                receiverId: currentChatUser.id,
+                content: message,
+                sentAt: new Date().toISOString()
+            };
+
+            chatMessages.push(newMessage);
+            displayChatMessages(chatMessages);
+            input.value = '';
+        } else {
+            showMessage('❌ Ошибка отправки сообщения', false);
+        }
+    } catch (error) {
+        showMessage('❌ Ошибка сети', false);
+    }
+}
+
+// Обработчики закрытия модальных окон
+window.addEventListener('click', function(event) {
+    const userProfileModal = document.getElementById('userProfileModal');
+    if (event.target === userProfileModal) {
+        closeUserProfile();
+    }
+
+    const chatModal = document.getElementById('chatModal');
+    if (event.target === chatModal) {
+        closeChatModal();
+    }
+});
 
 function logout() {
     localStorage.removeItem('jwtToken');
@@ -304,23 +709,4 @@ function showMessage(text, isSuccess) {
     setTimeout(() => {
         messageDiv.style.display = 'none';
     }, 5000);
-}
-
-// Функция для отладки - проверка доступности endpoint
-async function testEndpoint() {
-    const token = localStorage.getItem('jwtToken');
-    try {
-        const response = await fetch(`${API_BASE_URL}/recommend`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        console.log('Endpoint test:', response.status, response.statusText);
-        return response.ok;
-    } catch (error) {
-        console.error('Endpoint test error:', error);
-        return false;
-    }
 }

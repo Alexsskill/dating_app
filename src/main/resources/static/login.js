@@ -56,7 +56,7 @@ async function signIn() {
         if (response.ok) {
             const data = await response.json();
             showMessage('Успешный вход!', true);
-            showToken(data.token || JSON.stringify(data));
+            // showToken(data.token || JSON.stringify(data));
             // Сохраняем токен в localStorage
             localStorage.setItem('jwtToken', data.token);
             window.location.href = 'profile.html';
@@ -103,7 +103,7 @@ async function signUp() {
         if (response.ok) {
             const data = await response.json();
             showMessage('Успешная регистрация!', true);
-            showToken(data.token || JSON.stringify(data));
+            // showToken(data.token || JSON.stringify(data));
             // Переключаемся на форму входа
             showForm('login');
             // Сохраняем токен в localStorage
@@ -122,8 +122,8 @@ async function signUp() {
 window.addEventListener('load', () => {
     const token = localStorage.getItem('jwtToken');
     if (token) {
-        showToken(token);
-        showMessage('Токен найден в localStorage', true);
+        // showToken(token);
+        // showMessage('Токен найден в localStorage', true);
     }
 
     function redirectToProfile() {

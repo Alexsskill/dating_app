@@ -4,10 +4,7 @@ import com.example.dating_app.dto.SignUpRequest;
 import com.example.dating_app.dto.UserResponseDTO;
 import com.example.dating_app.dto.UserUpdateDTO;
 import com.example.dating_app.model.User;
-import org.mapstruct.BeanMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
