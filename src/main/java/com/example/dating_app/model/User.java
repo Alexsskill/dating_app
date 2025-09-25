@@ -1,6 +1,7 @@
 package com.example.dating_app.model;
 
 import com.example.dating_app.enums.LookingFor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -12,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -27,7 +29,9 @@ public class User implements UserDetails {
     private Long id;
     private String firstName;
     private String lastName;
-    private LocalDate dateOfBirth;
+    private String bio;
+    private String city;
+    private Integer age;
     private String phone;
     private String email;
     private String password;
@@ -35,9 +39,6 @@ public class User implements UserDetails {
     private Gender gender;
     @Enumerated(EnumType.STRING)
     private UserRole role;
-    private String bio;
-    private String city;
-    private Integer age;
     @Enumerated(EnumType.STRING)
     private LookingFor lookingFor;
 
@@ -46,9 +47,6 @@ public class User implements UserDetails {
     private LocalDateTime addedAt;
     @CreationTimestamp
     private LocalDateTime updatedAt;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Photo> photos;
 
     @Override
     public String getUsername() {
@@ -64,4 +62,30 @@ public class User implements UserDetails {
     public String getPassword() {
         return this.password;
     }
+
+    // Обратная связь для лайков, отправленных этим пользователем
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @JsonIgnore
+    private List<Like> sentLikes;
+
+    // Обратная связь для лайков, полученных этим пользователем
+    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @JsonIgnore
+    private List<Like> receivedLikes;
+
+    // Сообщения, отправленные пользователем (НОВАЯ СВЯЗЬ)
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @JsonIgnore
+    private List<ChatMessage> sentMessages;
+
+    // Сообщения, полученные пользователем (НОВАЯ СВЯЗЬ)
+    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @JsonIgnore
+    private List<ChatMessage> receivedMessages;
 }

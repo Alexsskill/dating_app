@@ -13,4 +13,12 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     @Query("SELECT m FROM ChatMessage m WHERE (m.sender.id = :senderId AND m.receiver.id = :receiverId) OR " +
             "(m.sender.id = :receiverId AND m.receiver.id = :senderId) ORDER BY m.sentAt")
     List<ChatMessage> findChatMessages(@Param("senderId") Long senderId, @Param("receiverId") Long receiverId);
+
+    // Получить историю переписки между двумя пользователями
+    @Query("SELECT m FROM ChatMessage m WHERE " +
+            "(m.sender.id = :user1Id AND m.receiver.id = :user2Id) OR " +
+            "(m.sender.id = :user2Id AND m.receiver.id = :user1Id) " +
+            "ORDER BY m.sentAt ASC")
+    List<ChatMessage> findChatHistory(@Param("user1Id") Long user1Id,
+                                      @Param("user2Id") Long user2Id);
 }

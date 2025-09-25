@@ -1,0 +1,258 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой профиль - Dating App</title>
+    <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+<div class="container">
+    <header class="header">
+        <h1>❤️ Мой профиль</h1>
+        <div class="header-buttons">
+            <button class="find-pair-btn" onclick="toggleFindPair()">
+                🔍 Найти пару
+            </button>
+            <button class="likes-btn" onclick="toggleLikesSection()">
+                💖 Мои симпатии
+            </button>
+            <button class="logout-btn" onclick="logout()">🚪 Выйти</button>
+        </div>
+    </header>
+
+    <div class="profile-content">
+        <!-- Информация о пользователе -->
+        <div class="profile-section">
+            <h2>👤 Личная информация</h2>
+            <div class="profile-info">
+                <div class="info-item">
+                    <label>Имя:</label>
+                    <span id="firstName">Загрузка...</span>
+                </div>
+                <div class="info-item">
+                    <label>Город:</label>
+                    <span id="city">Загрузка...</span>
+                </div>
+                <div class="info-item">
+                    <label>Возраст:</label>
+                    <span id="age">Загрузка...</span>
+                </div>
+                <div class="info-item">
+                    <label>Телефон:</label>
+                    <span id="phone">Загрузка...</span>
+                </div>
+                <div class="info-item">
+                    <label>Пол:</label>
+                    <span id="gender">Загрузка...</span>
+                </div>
+                <div class="info-item">
+                    <label>Роль:</label>
+                    <span id="role">Загрузка...</span>
+                </div>
+                <div class="info-item">
+                    <label>Цель знакомства:</label>
+                    <span id="lookingFor">Загрузка...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Форма редактирования -->
+        <div class="profile-section">
+            <h2>✏️ Редактировать профиль</h2>
+            <form id="editForm" class="edit-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editFirstName">Имя:</label>
+                        <input type="text" id="editFirstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCity">Город:</label>
+                        <input type="text" id="editCity" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editAge">Возраст:</label>
+                        <input type="number" id="editAge" min="18" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editGender">Пол:</label>
+                        <select id="editGender">
+                            <option value="MALE">Мужской</option>
+                            <option value="FEMALE">Женский</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editLookingFor">Цель знакомства:</label>
+                        <select id="editLookingFor">
+                            <option value="FRIENDSHIP">Дружба</option>
+                            <option value="SERIOUS_RELATIONSHIP">Серьёзные отношения</option>
+                            <option value="FAMILY">Семья</option>
+                            <option value="TALKING">Общение</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="save-btn">💾 Сохранить изменения</button>
+            </form>
+        </div>
+
+        <!-- Секция симпатий -->
+        <div id="likesSection" class="likes-section" style="display: none;">
+            <div class="section-header">
+                <h2>💖 Мои симпатии</h2>
+                <button class="close-btn" onclick="toggleLikesSection()">✕</button>
+            </div>
+
+            <div id="likesLoading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <span>Загрузка симпатий...</span>
+            </div>
+
+            <div id="likesContainer" class="likes-container">
+                <div class="no-likes">У вас пока нет симпатий</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно поиска пар -->
+    <div id="findPairModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔍 Найти пару</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+
+            <div class="filters-section">
+                <h3>🎯 Фильтры поиска</h3>
+                <form id="filterForm" class="filter-form">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="filterGender">Пол:</label>
+                            <select id="filterGender">
+                                <option value="">Любой</option>
+                                <option value="MALE">Мужской</option>
+                                <option value="FEMALE">Женский</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="filterCity">Город:</label>
+                            <input type="text" id="filterCity" placeholder="Введите город">
+                        </div>
+                    </div>
+
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="minAge">Возраст от:</label>
+                            <input type="number" id="minAge" min="18" max="100" placeholder="18">
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="maxAge">Возраст до:</label>
+                            <input type="number" id="maxAge" min="18" max="100" placeholder="100">
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="lookingFor">Цель знакомства:</label>
+                            <select id="filterLookingFor">
+                                <option value="">Любая</option>
+                                <option value="FRIENDSHIP">Дружба</option>
+                                <option value="SERIOUS_RELATIONSHIP">Серьёзные отношения</option>
+                                <option value="FAMILY">Семья</option>
+                                <option value="TALKING">Общение</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filter-buttons">
+                        <button type="submit" class="search-btn">🔍 Поиск</button>
+                        <button type="button" class="clear-btn" onclick="clearFilters()">🧹 Очистить</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="results-section">
+                <h3>👥 Результаты поиска</h3>
+                <div id="loading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <span>Идет поиск...</span>
+                </div>
+                <div id="resultsContainer" class="results-container">
+                    <div class="no-results">Введите критерии поиска и нажмите "Поиск"</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно просмотра профиля -->
+    <div id="userProfileModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>👤 Профиль</h2>
+                <span class="close" onclick="closeUserProfile()">&times;</span>
+            </div>
+
+            <div class="modal-body">
+                <div id="profileLoading" style="text-align: center; padding: 20px;">
+                    <div class="spinner"></div>
+                    <div>Загрузка профиля...</div>
+                </div>
+
+                <div id="profileContent" style="display: none;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h3 id="profileName" style="margin: 0; color: #2c3e50;"></h3>
+                        <div id="profileAge" style="color: #6c757d; margin-top: 5px;"></div>
+                    </div>
+
+                    <div style="display: grid; gap: 10px; margin-bottom: 20px;">
+                        <div><strong>📍 Город:</strong> <span id="profileCity"></span></div>
+                        <div><strong>👫 Пол:</strong> <span id="profileGender"></span></div>
+                        <div><strong>💬 Цель:</strong> <span id="profileLookingFor"></span></div>
+                        <div><strong>📞 Телефон:</strong> <span id="profilePhone"></span></div>
+                    </div>
+
+                    <div style="text-align: center;">
+                        <button class="like-btn" onclick="likeProfileUser()" style="margin: 5px;">❤️ Лайк</button>
+                        <button class="chat-btn" onclick="startChatWithProfileUser()" style="margin: 5px;">💬 Чат</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно чата -->
+    <div id="chatModal" class="modal">
+        <div class="modal-content chat-modal">
+            <div class="modal-header">
+                <h2>💬 Чат с <span id="chatUserName"></span></h2>
+                <span class="close" onclick="closeChatModal()">&times;</span>
+            </div>
+
+            <div class="chat-container">
+                <div id="chatMessages" class="chat-messages">
+                    <div class="no-messages">Загрузка сообщений...</div>
+                </div>
+
+                <div class="chat-input-container">
+                    <input type="text" id="chatMessageInput" placeholder="Введите сообщение..." maxlength="500">
+                    <button onclick="sendChatMessage()">📤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="message" class="message" style="display: none;"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script src="profile.js"></script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 package com.example.dating_app.dto;
 
+import com.example.dating_app.enums.LookingFor;
 import lombok.*;
+
 import java.time.LocalDate;
 
 @Data
@@ -9,7 +11,6 @@ public class RecommendationFilterDTO {
     private String gender;
     private Integer minAge;
     private Integer maxAge;
-    private Double maxDistanceKm;
-    private LocalDate dateOfBirthFrom;
-    private LocalDate dateOfBirthTo;
+    private String city;
+    private String lookingFor;
 }

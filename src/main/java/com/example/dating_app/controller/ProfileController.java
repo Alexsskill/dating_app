@@ -1,9 +1,10 @@
 package com.example.dating_app.controller;
 
+import com.example.dating_app.dto.UserUpdateDTO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.example.dating_app.dto.ProfileUpdateDTO;
 import com.example.dating_app.service.CurrentUserService;
 
 @RestController
@@ -18,7 +19,7 @@ public class ProfileController {
     }
 
     @PutMapping
-    public ResponseEntity<?> updateProfile(@RequestBody ProfileUpdateDTO dto) {
-        return ResponseEntity.ok(currentUserService.updateProfile(dto));
+    public ResponseEntity<?> update(@RequestBody UserUpdateDTO dto) {
+        return ResponseEntity.ok(currentUserService.update(dto));
     }
 }
